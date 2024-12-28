@@ -1,6 +1,155 @@
 <header>
 
-<!--
+<<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mini Bar Management</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 480px;
+            margin: 20px auto;
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 28px;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .form-group input {
+            width: 100%;
+            font-size: 16px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-sizing: border-box;
+            margin-bottom: 10px;
+        }
+
+        button {
+            display: block;
+            width: 100%;
+            max-width: 320px;
+            margin: 20px auto;
+            padding: 15px;
+            background: linear-gradient(135deg, #3498db, #2ecc71);
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            text-transform: uppercase;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            transition: background 0.3s;
+        }
+
+        button:hover {
+            background: linear-gradient(135deg, #2980b9, #27ae60);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Inventář Mini Baru</h1>
+        <div id="items"></div>
+        <button onclick="generateInvoice()">Generovat fakturu</button>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3000';
+
+        // Načíst inventář
+        async function loadInventory() {
+            const res = await fetch(`${API_URL}/items`);
+            const items = await res.json();
+            const container = document.getElementById('items');
+            container.innerHTML = '';
+
+            items.forEach(item => {
+                const formGroup = document.createElement('div');
+                formGroup.classList.add('form-group');
+
+                const label = document.createElement('label');
+                label.textContent = `${item.name} (Skladem: ${item.quantity}, Cena: ${item.price} Kč)`;
+
+                const input = document.createElement('input');
+                input.type = 'number';
+                input.min = '0';
+                input.placeholder = 'Zadejte počet';
+                input.id = `item-${item.id}`;
+
+                formGroup.appendChild(label);
+                formGroup.appendChild(input);
+                container.appendChild(formGroup);
+            });
+        }
+
+        // Odečíst položky a vytvořit fakturu
+        async function generateInvoice() {
+            const inputs = document.querySelectorAll('#items input');
+            let invoiceDetails = '';
+            let total = 0;
+
+            for (const input of inputs) {
+                const id = input.id.split('-')[1];
+                const quantity = parseInt(input.value, 10);
+
+                if (quantity > 0) {
+                    const res = await fetch(`${API_URL}/items`);
+                    const items = await res.json();
+                    const item = items.find(i => i.id == id);
+
+                    if (item) {
+                        invoiceDetails += `${quantity}x ${item.name}: ${item.price * quantity} Kč<br>`;
+                        total += item.price * quantity;
+
+                        await fetch(`${API_URL}/deduct`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ id, quantity })
+                        });
+                    }
+                }
+            }
+
+            alert(`Faktura:\n${invoiceDetails}\nCelkem: ${total} Kč`);
+            loadInventory();
+        }
+
+        window.onload = loadInventory;
+    </script>
+</body>
+</html>!--
   <<< Author notes: Course header >>>
   Read <https://skills.github.com/quickstart> for more information about how to build courses using this template.
   Include a 1280×640 image, course name in sentence case, and a concise description in emphasis.
